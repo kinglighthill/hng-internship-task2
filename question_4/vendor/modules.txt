@@ -39,6 +39,11 @@ github.com/heroku/x/hmetrics/onload
 github.com/json-iterator/go
 # github.com/leodido/go-urn v1.2.0
 github.com/leodido/go-urn
+# github.com/lib/pq v1.10.2
+## explicit
+github.com/lib/pq
+github.com/lib/pq/oid
+github.com/lib/pq/scram
 # github.com/magiconair/properties v1.8.5
 github.com/magiconair/properties
 # github.com/mattn/go-isatty v0.0.12
@@ -51,6 +56,13 @@ github.com/modern-go/concurrent
 github.com/modern-go/reflect2
 # github.com/pelletier/go-toml v1.9.3
 github.com/pelletier/go-toml
+# github.com/sendgrid/rest v2.6.4+incompatible
+## explicit
+github.com/sendgrid/rest
+# github.com/sendgrid/sendgrid-go v3.10.0+incompatible
+## explicit
+github.com/sendgrid/sendgrid-go
+github.com/sendgrid/sendgrid-go/helpers/mail
 # github.com/spf13/afero v1.6.0
 github.com/spf13/afero
 github.com/spf13/afero/mem
@@ -67,6 +79,8 @@ github.com/spf13/viper
 github.com/subosito/gotenv
 # github.com/ugorji/go/codec v1.1.7
 github.com/ugorji/go/codec
+# go.mongodb.org/mongo-driver v1.7.1
+## explicit
 # golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 golang.org/x/crypto/sha3
 # golang.org/x/sys v0.0.0-20210510120138-977fb7262007
@@ -106,11 +120,9 @@ google.golang.org/protobuf/runtime/protoimpl
 google.golang.org/protobuf/types/descriptorpb
 # gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc
 ## explicit
-gopkg.in/alexcesaro/quotedprintable.v3
 # gopkg.in/ini.v1 v1.62.0
 gopkg.in/ini.v1
 # gopkg.in/mail.v2 v2.3.1
 ## explicit
-gopkg.in/mail.v2
 # gopkg.in/yaml.v2 v2.4.0
 gopkg.in/yaml.v2

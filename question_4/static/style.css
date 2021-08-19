@@ -340,6 +340,10 @@ form {
     background: var(--color-green);
 }
 
+.submit-button:hover {
+    cursor: pointer;
+}
+
 .headings {
     margin-top: 50px;
     margin-bottom: 50px;
@@ -409,7 +413,7 @@ footer i {
 
 .contact-details {
     font-size: 2.4rem;
-    text-shadow: 2px 2px 1px #1f1f1f;
+    text-shadow: 0.1px 0.1px 0.05px #1f1f1f;
     transition: transform 0.3s ease-out;
 }
 

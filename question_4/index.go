@@ -1,28 +1,23 @@
 package main
 
-/* import (
-	"github.com/gin-gonic/contrib/static"
-	"github.com/gin-gonic/gin"
-) */
-
 import (
 	"fmt"
 	"html"
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"net/smtp"
-
-	// "crypto/tls"
-	/* "github.com/gin-gonic/contrib/static" */
+	"os"
 	"github.com/gin-gonic/gin"
 	_ "github.com/heroku/x/hmetrics/onload"
+	"github.com/sendgrid/sendgrid-go"
+	"github.com/sendgrid/sendgrid-go/helpers/mail"
 	"github.com/spf13/viper"
-	// gomail "gopkg.in/mail.v2"
+	"database/sql"
+	_ "github.com/lib/pq"
 )
 
-// const myEmail string = "testyholyhill@gmail.com"
+var Db *sql.DB
 
 func main() {
 	port := os.Getenv("PORT")
@@ -31,6 +26,13 @@ func main() {
 		port = "80"
 		log.Fatal("$PORT set to 80")
 	}
+
+	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	Db = db
 
 	router := gin.New()
 	router.Use(gin.Logger())
@@ -46,30 +48,13 @@ func main() {
 	router.Run(":" + port)
 }
 
-/* func formResponse(c *gin.Context) {
-	w := c.Writer
-
-	fmt.Fprintf(w, 
-		`<html>
-            <head>
-            </head>
-            <body>
-            <h1>Go Timer (ticks every second!)</h1>
-            <div id="output"></div>
-            <script type="text/javascript">
-            console.log("`+hello+`");
-            </script>
-            </body>
-        </html>`)
-} */
-
 func contactMe(c *gin.Context) {
 	c.HTML(http.StatusOK, "index.html", nil)
 	
 	script := `<html>
 					<body>
 						<script type="text/javascript">
-							alert("Thank you for contacting me, your email has been received");
+							alert("Thank you for contacting me, your email has been received \nCheck your mail");
 						</script>
 					</body>
 			    </html>`
@@ -83,12 +68,22 @@ func contactMe(c *gin.Context) {
 		email := c.PostForm("email")
 		comment := c.PostForm("comment")
 
-		sendMail(email, "Hello " + firstName + " " +  lastName + ". Thank you for reaching out to me.")
+		myEmail := getEnv("EMAIL")
+		// password := getEnv("PASSWORD")
+
+		message := "Hello " + firstName + " " +  lastName + ". Thank you for reaching out to me."
+
+		insertFormData(firstName, lastName, email, comment)
+
+		sendMailSG(email, message)
+
+		sendMail(email, message)
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		io.WriteString(w, script)
 
-		fmt.Fprintf(w, "Hello, %q <br>first name:%s <br>last name: %s <br>email: %s <br>comment: %s ", html.EscapeString(r.URL.Path), firstName, lastName, email, comment)
+		fmt.Fprintf(w, "Hello, %q <br>first name:%s <br>last name: %s <br>email: %s <br>comment: %s <br>my email: %s", 
+			html.EscapeString(r.URL.Path), firstName, lastName, email, comment, myEmail)
 	}  
 }
 
@@ -118,6 +113,25 @@ func sendMail(email string, body string) {
 	fmt.Println("Email Sent Successfully!")
 }
 
+func sendMailSG(email string, body string) {
+	myEmail := getEnv("EMAIL")
+	from := mail.NewEmail("Kingsley Ugwudinso", myEmail)
+	subject := "Hurray!!! I got it."
+	to := mail.NewEmail("Kingsley Ugwudinso", email)
+	plainTextContent := body
+	htmlContent := "<strong>" + body + "</strong>"
+	message := mail.NewSingleEmail(from, subject, to, plainTextContent, htmlContent)
+	client := sendgrid.NewSendClient(getEnv("SENDGRID_API_KEY"))
+	response, err := client.Send(message)
+	if err != nil {
+		log.Println(err)
+	} else {
+		fmt.Println(response.StatusCode)
+		fmt.Println(response.Body)
+		fmt.Println(response.Headers)
+	}
+}
+
 func getEnv(key string) string {
 	viper.SetConfigFile(".env")
   
@@ -136,25 +150,8 @@ func getEnv(key string) string {
 	return value
 }
   
-
-/* func main() {
-	port := GetPort()
-	http.HandleFunc("/", hello)
-	log.Print("Listening on :" + port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+func insertFormData(firstName string, lastName string, email string, comment string) {
+	sqlStatement := `INSERT INTO resume (first_name, last_name, email, comment)
+	VALUES ($1, $2, $3, $4)`
+	_, _ = Db.Exec(sqlStatement, firstName, lastName, email, comment)
 }
-
-func hello(w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, "Hello World")
-}
-
-func GetPort() string {
-	port := os.Getenv("PORT")
-
-	if port == "" {
-		port = "4747"
-		fmt.Println("INFO: No PORT environment variable detected, defaulting to " + port)
-	}
-
-	return ":" + port
-} */
