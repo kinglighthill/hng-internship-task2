@@ -68,7 +68,7 @@ func contactMe(c *gin.Context) {
 		email := c.PostForm("email")
 		comment := c.PostForm("comment")
 
-		myEmail := getEnv("EMAIL")
+		// myEmail := getEnv("EMAIL")
 		// password := getEnv("PASSWORD")
 
 		message := "Hello " + firstName + " " +  lastName + ". Thank you for reaching out to me."
@@ -81,9 +81,6 @@ func contactMe(c *gin.Context) {
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		io.WriteString(w, script)
-
-		fmt.Fprintf(w, "Hello, %q <br>first name:%s <br>last name: %s <br>email: %s <br>comment: %s <br>my email: %s", 
-			html.EscapeString(r.URL.Path), firstName, lastName, email, comment, myEmail)
 	}  
 }
 
