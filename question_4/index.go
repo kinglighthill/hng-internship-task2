@@ -1,21 +1,24 @@
 package main
 
 import (
-	"fmt"
-	"html"
 	"io"
 	"log"
 	"net/http"
-	"net/smtp"
 	"os"
 	"github.com/gin-gonic/gin"
 	_ "github.com/heroku/x/hmetrics/onload"
-	"github.com/sendgrid/sendgrid-go"
-	"github.com/sendgrid/sendgrid-go/helpers/mail"
-	"github.com/spf13/viper"
 	"database/sql"
 	_ "github.com/lib/pq"
 )
+
+type emailSent func (gin.ResponseWriter, string) 
+
+type formData struct {
+	firstName string
+	lastName string
+	email string
+	comment string
+}
 
 var Db *sql.DB
 
@@ -50,14 +53,6 @@ func main() {
 
 func contactMe(c *gin.Context) {
 	c.HTML(http.StatusOK, "index.html", nil)
-	
-	script := `<html>
-					<body>
-						<script type="text/javascript">
-							alert("Thank you for contacting me, your email has been received \nCheck your mail");
-						</script>
-					</body>
-			    </html>`
 
 	r := c.Request
 	w := c.Writer
@@ -68,87 +63,48 @@ func contactMe(c *gin.Context) {
 		email := c.PostForm("email")
 		comment := c.PostForm("comment")
 
-		// myEmail := getEnv("EMAIL")
-		// password := getEnv("PASSWORD")
-
-		message := "Hello " + firstName + " " +  lastName + ". Thank you for reaching out to me."
-
-		insertFormData(firstName, lastName, email, comment)
-
-		sendMailSG(email, message)
-
-		sendMail(email, message)
-
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		io.WriteString(w, script)
+		data := formData {
+			firstName: firstName,
+			lastName: lastName,
+			email: email,
+			comment: comment,
+		}
+		insertFormData(data, func(w gin.ResponseWriter, script string) {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			io.WriteString(w, script)
+		}, w)
 	}  
 }
 
-func sendMail(email string, body string) {
-	myEmail := getEnv("EMAIL")
-	password := getEnv("PASSWORD")
-
-  	// Receiver email address.
-	to := []string {email}
-
-	// smtp server configuration.
-	smtpHost := "smtp.gmail.com"
-	smtpPort := "587"
-	
-	// Authentication.
-	auth := smtp.PlainAuth("", myEmail, password, smtpHost)
-	
-	// Message.
-	message := []byte(body)
-
-	// Sending email.
-	err := smtp.SendMail(smtpHost+":"+smtpPort, auth, myEmail, to, message)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println("Email Sent Successfully!")
+func showErrorAlert() string {
+	script := `<html>
+					<body>
+						<script type="text/javascript">
+							alert("Error submiting form");
+						</script>
+					</body>
+			    </html>`
+	return  script
 }
 
-func sendMailSG(email string, body string) {
-	myEmail := getEnv("EMAIL")
-	from := mail.NewEmail("Kingsley Ugwudinso", myEmail)
-	subject := "Hurray!!! I got it."
-	to := mail.NewEmail("Kingsley Ugwudinso", email)
-	plainTextContent := body
-	htmlContent := "<strong>" + body + "</strong>"
-	message := mail.NewSingleEmail(from, subject, to, plainTextContent, htmlContent)
-	client := sendgrid.NewSendClient(getEnv("SENDGRID_API_KEY"))
-	response, err := client.Send(message)
-	if err != nil {
-		log.Println(err)
-	} else {
-		fmt.Println(response.StatusCode)
-		fmt.Println(response.Body)
-		fmt.Println(response.Headers)
-	}
-}
-
-func getEnv(key string) string {
-	viper.SetConfigFile(".env")
-  
-	err := viper.ReadInConfig()
-  
-	if err != nil {
-	  log.Fatalf("Error while reading config file %s", err)
-	}
-  
-	value, ok := viper.Get(key).(string)
-  
-	if !ok {
-	  log.Fatalf("Invalid type assertion")
-	}
-  
-	return value
+func showSuccesAlert() string {
+	script := `<html>
+					<body>
+						<script type="text/javascript">
+							alert("Form submitted successfully. \nThank you for contacting me, your contact has been received");
+						</script>
+					</body>
+			    </html>`
+	return  script
 }
   
-func insertFormData(firstName string, lastName string, email string, comment string) {
+func insertFormData(data formData, onEmailSent emailSent, w gin.ResponseWriter) {
 	sqlStatement := `INSERT INTO resume (first_name, last_name, email, comment)
 	VALUES ($1, $2, $3, $4)`
-	_, _ = Db.Exec(sqlStatement, firstName, lastName, email, comment)
+	_, err := Db.Exec(sqlStatement, data.firstName, data.lastName, data.email, data.comment)
+
+	if err != nil {
+		onEmailSent(w, showErrorAlert())
+	}
+	onEmailSent(w, showSuccesAlert())
 }
